@@ -1,166 +1,201 @@
--- Prevacate Market Rivals Script – December 18 2025 – UNLOCK ALL COSMETICS + TRIGGER + FOV + SMOOTH + SILENT 🩸🔓💀
--- Client-side unlock all skins/wraps/charms/finishers/guns – Flex paid shit free. Rage suite full.
+local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
+local window = library.CreateLib("Rivals Script", "DarkTheme")
 
+local mainTab = window:NewTab("Main")
+local aimbotSection = mainTab:NewSection("Aimbot")
+local espSection = mainTab:NewSection("ESP")
+
+-- Aimbot Settings
+local aimbotEnabled = false
+local teamCheck = true
+local fov = 150
+local smoothing = 0.2
+local lockPart = "Head"
+local showFov = true
+local fovColor = Color3.fromRGB(255, 128, 128)
+
+aimbotSection:NewToggle("Enabled", "Toggle Aimbot", function(state)
+    aimbotEnabled = state
+end)
+
+aimbotSection:NewToggle("Team Check", "Ignore Teammates", function(state)
+    teamCheck = state
+end)
+
+aimbotSection:NewSlider("FOV", "Field of View Radius", 500, 50, function(value)
+    fov = value
+end)
+
+aimbotSection:NewSlider("Smoothing", "Aimbot Smoothness (0-1)", 100, 1, function(value)
+    smoothing = value / 100
+end)
+
+aimbotSection:NewDropdown("Lock Part", "Target Body Part", {"Head", "HumanoidRootPart", "Torso"}, function(value)
+    lockPart = value
+end)
+
+aimbotSection:NewToggle("Show FOV Circle", "Display FOV Circle", function(state)
+    showFov = state
+end)
+
+aimbotSection:NewColorPicker("FOV Color", "Color of FOV Circle", fovColor, function(color)
+    fovColor = color
+end)
+
+-- ESP Settings
+local espEnabled = false
+local espColor = Color3.fromRGB(255, 0, 0)
+local espTeamCheck = true
+
+espSection:NewToggle("Enabled", "Toggle ESP", function(state)
+    espEnabled = state
+end)
+
+espSection:NewColorPicker("ESP Color", "Color for ESP", espColor, function(color)
+    espColor = color
+end)
+
+espSection:NewToggle("Team Check", "Ignore Teammates in ESP", function(state)
+    espTeamCheck = state
+end)
+
+-- FOV Circle
+local FOVring = Drawing.new("Circle")
+FOVring.Visible = false
+FOVring.Thickness = 1
+FOVring.Radius = fov
+FOVring.Transparency = 0.8
+FOVring.Color = fovColor
+FOVring.Position = workspace.CurrentCamera.ViewportSize / 2
+
+-- ESP Drawings
+local espDrawings = {}
+
+-- Services
+local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
-local RunService = game:GetService("RunService")
+
+-- Aimbot Logic
+local currentTarget = nil
+local toggleState = false
+local ToggleKey = Enum.UserInputType.MouseButton2 -- Right Click
+
 local UserInputService = game:GetService("UserInputService")
 
--- *** CLIENT-SIDE UNLOCK ALL COSMETICS (visual god – equip anything) ***
-spawn(function()
-    wait(2)  -- Wait for loadout replication
-    local Collection = LocalPlayer:WaitForChild("PlayerGui"):WaitForChild("CollectionGui") or LocalPlayer:WaitForChild("Collection")
-    if Collection then
-        for _, item in pairs(Collection:GetDescendants()) do
-            if item:IsA("BoolValue") and item.Name == "Owned" then
-                item.Value = true
+local function getClosest(cframe)
+    local ray = Ray.new(cframe.Position, cframe.LookVector).Unit
+    local target = nil
+    local mag = math.huge
+    local screenCenter = Camera.ViewportSize / 2
+    for _, v in pairs(Players:GetPlayers()) do
+        if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild(lockPart) and v.Character:FindFirstChild("Humanoid") and v.Character.Humanoid.Health > 0 and (not teamCheck or v.Team ~= LocalPlayer.Team) then
+            local screenPoint, onScreen = Camera:WorldToViewportPoint(v.Character[lockPart].Position)
+            local distanceFromCenter = (Vector2.new(screenPoint.X, screenPoint.Y) - screenCenter).Magnitude
+            if onScreen and distanceFromCenter <= fov then
+                local magBuf = (v.Character[lockPart].Position - ray:ClosestPoint(v.Character[lockPart].Position)).Magnitude
+                if magBuf < mag then
+                    mag = magBuf
+                    target = v
+                end
             end
         end
     end
-    -- Force equip random/rare for flex
-    if LocalPlayer:FindFirstChild("Loadout") then
-        for _, weapon in pairs(LocalPlayer.Loadout:GetChildren()) do
-            if weapon:FindFirstChild("Skin") then weapon.Skin.Value = "Legendary Rare Shit" end  -- Placeholder for any
-        end
-    end
-    print("🩸 UNLOCK ALL COSMETICS FLEX ACTIVATED – YOU OWN EVERY SKIN, NIGGA! 🔓")
-end)
-
--- Config – RAGE TUNER
-getgenv().SilentAimEnabled = true
-getgenv().AimbotEnabled = true
-getgenv().TriggerbotEnabled = true
-getgenv().TriggerChance = 100
-getgenv().TriggerPart = "Head"
-getgenv().AimbotSmoothing = 0.15
-getgenv().FOVEnabled = true
-getgenv().FOVRadius = 150
-getgenv().FOVShow = true
-getgenv().FOVColor = Color3.fromRGB(255, 0, 0)
-getgenv().FOVThickness = 2
-getgenv().FOVFilled = false
-getgenv().ESPEnabled = true
-getgenv().SpeedHack = 100
-getgenv().InfiniteJump = true
-getgenv().NoRecoil = true
-getgenv().SilentAimPart = "Head"
-getgenv().HitChance = 100
-
--- FOV Circle
-local FOVCircle = Drawing.new("Circle")
-FOVCircle.Visible = false
-FOVCircle.Radius = getgenv().FOVRadius
-FOVCircle.Filled = getgenv().FOVFilled
-FOVCircle.Color = getgenv().FOVColor
-FOVCircle.Thickness = getgenv().FOVThickness
-FOVCircle.NumSides = 64
-FOVCircle.Transparency = 0.8
-
--- ESP
-local function CreateESP(player)
-    if player == LocalPlayer then return end
-    local Box = Drawing.new("Square")
-    Box.Thickness = 2 Box.Filled = false Box.Color = Color3.fromRGB(255, 0, 0) Box.Transparency = 1
-    local Text = Drawing.new("Text")
-    Text.Size = 16 Text.Center = true Text.Outline = true Text.Color = Color3.fromRGB(255, 255, 255)
-    local con
-    con = RunService.RenderStepped:Connect(function()
-        if not getgenv().ESPEnabled or not player.Character or not player.Character:FindFirstChild("Head") then
-            Box.Visible = Text.Visible = false return
-        end
-        local HeadPos, OnScreen = Camera:WorldToViewportPoint(player.Character.Head.Position)
-        if OnScreen then
-            local Distance = (LocalPlayer.Character.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude
-            local size = (2000 / HeadPos.Z)
-            Box.Size = Vector2.new(size, size * 1.5)
-            Box.Position = Vector2.new(HeadPos.X - Box.Size.X / 2, HeadPos.Y - Box.Size.Y / 2)
-            Box.Visible = true
-            Text.Text = player.Name .. " [" .. math.floor(Distance) .. "m]"
-            Text.Position = Vector2.new(HeadPos.X, HeadPos.Y - 30)
-            Text.Visible = true
-        else
-            Box.Visible = Text.Visible = false
-        end
-    end)
-    player.CharacterRemoving:Connect(function() con:Disconnect() Box:Remove() Text:Remove() end)
+    return target
 end
 
-for _, player in pairs(Players:GetPlayers()) do CreateESP(player) end
-Players.PlayerAdded:Connect(CreateESP)
-
--- FOV-limited closest
-local function GetClosestPlayer()
-    local Closest, MaxDist = nil, getgenv().FOVRadius
-    local MousePos = UserInputService:GetMouseLocation()
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Head") then
-            local HeadPos, OnScreen = Camera:WorldToViewportPoint(player.Character.Head.Position)
-            if OnScreen then
-                local Dist = (MousePos - Vector2.new(HeadPos.X, HeadPos.Y)).Magnitude
-                if Dist < MaxDist then MaxDist = Dist Closest = player end
-            end
-        end
-    end
-    return Closest
+local function updateFOVRing()
+    FOVring.Position = Camera.ViewportSize / 2
+    FOVring.Radius = fov
+    FOVring.Color = fovColor
+    FOVring.Visible = showFov and aimbotEnabled
 end
 
--- Smooth Aimbot + Trigger + FOV update
 RunService.RenderStepped:Connect(function()
-    local MousePos = UserInputService:GetMouseLocation()
-    FOVCircle.Position = MousePos
-    FOVCircle.Visible = getgenv().FOVEnabled and getgenv().FOVShow
-    FOVCircle.Radius = getgenv().FOVRadius
-
-    if getgenv().AimbotEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        local Target = GetClosestPlayer()
-        if Target and Target.Character and Target.Character:FindFirstChild("Head") then
-            local TargetPos = Target.Character.Head.Position
-            Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, TargetPos), getgenv().AimbotSmoothing)
-        end
-    end
-
-    if getgenv().TriggerbotEnabled then
-        local Target = GetClosestPlayer()
-        if Target and math.random(1, 100) <= getgenv().TriggerChance then
-            mouse1press()
-            task.wait(0.01)
-            mouse1release()
-        end
-    end
-end)
-
--- Silent Aim hook
-local mt = getrawmetatable(game)
-local old = mt.__namecall
-setreadonly(mt, false)
-mt.__namecall = newcclosure(function(self, ...)
-    local args = {...}
-    local method = getnamecallmethod()
-    if getgenv().SilentAimEnabled and self == Camera and method == "Raycast" and args[2] then
-        if math.random(1, 100) <= getgenv().HitChance then
-            local Target = GetClosestPlayer()
-            if Target and Target.Character and Target.Character:FindFirstChild(getgenv().SilentAimPart) then
-                args[2] = (Target.Character[getgenv().SilentAimPart].Position - args[1]).Unit * 1000
+    updateFOVRing()
+    if aimbotEnabled then
+        toggleState = UserInputService:IsMouseButtonPressed(ToggleKey)
+        if toggleState then
+            if not currentTarget then
+                currentTarget = getClosest(Camera.CFrame)
             end
+            if currentTarget and currentTarget.Character and currentTarget.Character:FindFirstChild(lockPart) then
+                local targetPos = currentTarget.Character[lockPart].Position
+                Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, targetPos), smoothing)
+            end
+        else
+            currentTarget = nil
         end
     end
-    return old(self, unpack(args))
 end)
-setreadonly(mt, true)
 
--- Speed/Jump/Recoil
-local function onChar(char)
-    local hum = char:WaitForChild("Humanoid")
-    hum.WalkSpeed = getgenv().SpeedHack
+-- ESP Logic
+local function addESP(player)
+    if player == LocalPlayer or (espTeamCheck and player.Team == LocalPlayer.Team) then return end
+    
+    local box = Drawing.new("Square")
+    box.Visible = false
+    box.Color = espColor
+    box.Thickness = 1
+    box.Transparency = 1
+    
+    local name = Drawing.new("Text")
+    name.Visible = false
+    name.Color = Color3.fromRGB(255, 255, 255)
+    name.Size = 16
+    name.Transparency = 1
+    
+    espDrawings[player] = {box = box, name = name}
 end
-if LocalPlayer.Character then onChar(LocalPlayer.Character) end
-LocalPlayer.CharacterAdded:Connect(onChar)
 
-UserInputService.JumpRequest:Connect(function()
-    if getgenv().InfiniteJump and LocalPlayer.Character then
-        LocalPlayer.Character.Humanoid:ChangeState("Jumping")
+local function removeESP(player)
+    if espDrawings[player] then
+        espDrawings[player].box:Remove()
+        espDrawings[player].name:Remove()
+        espDrawings[player] = nil
+    end
+end
+
+local function updateESP()
+    for player, drawings in pairs(espDrawings) do
+        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChild("Head") then
+            local rootPos, onScreen = Camera:WorldToViewportPoint(player.Character.HumanoidRootPart.Position)
+            local headPos = Camera:WorldToViewportPoint(player.Character.Head.Position + Vector3.new(0, 0.5, 0))
+            local legPos = Camera:WorldToViewportPoint(player.Character.HumanoidRootPart.Position - Vector3.new(0, 3, 0))
+            
+            if onScreen then
+                drawings.box.Size = Vector2.new(1000 / rootPos.Z, headPos.Y - legPos.Y)
+                drawings.box.Position = Vector2.new(rootPos.X - drawings.box.Size.X / 2, rootPos.Y - drawings.box.Size.Y / 2)
+                drawings.box.Visible = true
+                
+                drawings.name.Text = player.Name
+                drawings.name.Position = Vector2.new(rootPos.X, rootPos.Y - drawings.box.Size.Y / 2 - 16)
+                drawings.name.Visible = true
+            else
+                drawings.box.Visible = false
+                drawings.name.Visible = false
+            end
+        else
+            drawings.box.Visible = false
+            drawings.name.Visible = false
+        end
+    end
+end
+
+RunService.RenderStepped:Connect(function()
+    if espEnabled then
+        updateESP()
     end
 end)
 
-print("🩸 PREVACATE MARKET RIVALS FULL NUKE LOADED – UNLOCK ALL + RAGE SUITE – SERVERS BLEEDING, KING! 🔓🎯💀🔫")
+-- Player Added/Removing
+for _, player in pairs(Players:GetPlayers()) do
+    addESP(player)
+end
+
+Players.PlayerAdded:Connect(addESP)
+Players.PlayerRemoving:Connect(removeESP)
+
+-- Make ESP smooth by using RenderStepped for updates
+-- Loads instantly on execute
