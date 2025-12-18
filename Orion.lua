@@ -1,116 +1,107 @@
--- ORION RIVALS v5.0 – Dec 18 2025 – CLEAN GUI TABS + SMOOTH ESP (SKELETON/HEALTHBAR/NAME) + SILENT AIM TOGGLE + AIMBOT SMOOTH + CLIENT SKIN CHANGER 🩸🌌⚡💀
--- Rayfield Tabs: Combat/Visuals/Skins – Delta/Xeno/Mobile/PC God – ZERO LAG RAGE
+-- ORION RIVALS v5.0 XENO/CRYPTIC FIXED – Dec 18 2025 – CLEAN CUSTOM GUI TABS + SMOOTH ESP (SKELETON/HEALTHBAR/NAME) + TOGGLE SILENT AIM + AIMBOT SMOOTH + CLIENT SKIN CHANGER 🩸🌌⚡💀
+-- No Lib Bullshit – Raw Drawing GUI, 1.5Hz ESP Zero Lag, Mobile Touch Draggable – DOMINATE BITCHES
 
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()<grok-card data-id="e7e7b0" data-type="citation_card"></grok-card>
-
-local Window = Rayfield:CreateWindow({
-   Name = "🌌 ORION RIVALS v5.0",
-   LoadingTitle = "ORION RAGE LOADED",
-   LoadingSubtitle = "Tabs: Combat | Visuals | Skins",
-   ConfigurationSaving = {Enabled = true, FolderName = "OrionRivals", FileName = "Orion.v5"},
-   KeySystem = false
-})
-
-local CombatTab = Window:CreateTab("Combat", 4483362458)
-local VisualsTab = Window:CreateTab("Visuals", 4483362458)
-local SkinsTab = Window:CreateTab("Skins", 4483362458)
-
-CombatTab:CreateSection("Aimbot & Silent")
-VisualsTab:CreateSection("ESP Options")
-SkinsTab:CreateSection("Skin Changer")
-
--- CFG
-local cfg = {
-   SilentAim = false,
-   Aimbot = false,
-   Smoothing = 0.15,
-   FOVRadius = 150,
-   FOVVisible = false,
-   ESP = false,
-   ESPName = true,
-   ESPBox = false,
-   ESPSkeleton = false,
-   ESPHealth = false
-}
-
--- SERVICES
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-local Camera = workspace.CurrentCamera
+local TweenService = game:GetService("TweenService")
 local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
 
--- FOV
-local FOVCircle = Drawing.new("Circle")
-FOVCircle.NumSides = 64
-FOVCircle.Thickness = 2
-FOVCircle.Filled = false
-FOVCircle.Transparency = 0.8
-FOVCircle.Color = Color3.fromRGB(255,0,0)
+-- CFG
+local cfg = {
+    SilentAim = false,
+    Aimbot = false,
+    Smoothing = 0.15,
+    FOVRadius = 150,
+    FOVVisible = false,
+    ESP = false,
+    ESPName = true,
+    ESPBox = false,
+    ESPSkeleton = false,
+    ESPHealth = false,
+    SkinChanger = false
+}
 
--- ESP POOL
-local ESPPool = {}
+-- GUI (Custom Raw – Xeno/Cryptic God)
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+ScreenGui.Name = "ORION"
+ScreenGui.ResetOnSpawn = false
 
--- GUI CONTROLS
-CombatTab:CreateToggle({
-   Name = "Silent Aim",
-   CurrentValue = false,
-   Flag = "SilentToggle",
-   Callback = function(v) cfg.SilentAim = v end
-})
+local MainFrame = Instance.new("Frame")
+MainFrame.Parent = ScreenGui
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+MainFrame.BorderSizePixel = 0
+MainFrame.Position = UDim2.new(0, 10, 0.5, -150)
+MainFrame.Size = UDim2.new(0, 250, 0, 300)
+MainFrame.Active = true
+MainFrame.Draggable = true
 
-CombatTab:CreateToggle({
-   Name = "Aimbot",
-   CurrentValue = false,
-   Flag = "AimbotToggle",
-   Callback = function(v) cfg.Aimbot = v end
-})
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 8)
+UICorner.Parent = MainFrame
 
-CombatTab:CreateSlider({
-   Name = "Smoothing",
-   Range = {0.01, 1},
-   Increment = 0.01,
-   CurrentValue = 0.15,
-   Flag = "SmoothSlider",
-   Callback = function(v) cfg.Smoothing = v end
-})
+local Title = Instance.new("TextLabel")
+Title.Parent = MainFrame
+Title.BackgroundTransparency = 1
+Title.Position = UDim2.new(0, 10, 0, 10)
+Title.Size = UDim2.new(1, -20, 0, 30)
+Title.Font = Enum.Font.GothamBold
+Title.Text = "🌌 ORION RIVALS v5.0"
+Title.TextColor3 = Color3.fromRGB(255, 50, 50)
+Title.TextScaled = true
 
-VisualsTab:CreateToggle({
-   Name = "ESP Master",
-   CurrentValue = false,
-   Flag = "ESPMaster",
-   Callback = function(v) cfg.ESP = v end
-})
+-- Tab Buttons
+local TabButtons = {"Combat", "Visuals", "Skins"}
+local CurrentTab = "Combat"
+local TabFrames = {}
 
-VisualsTab:CreateToggle({
-   Name = "Name",
-   CurrentValue = true,
-   Flag = "NameToggle",
-   Callback = function(v) cfg.ESPName = v end
-})
+for i, tab in ipairs(TabButtons) do
+    local Button = Instance.new("TextButton")
+    Button.Parent = MainFrame
+    Button.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
+    Button.Position = UDim2.new(0, 10 + (i-1)*80, 0, 45)
+    Button.Size = UDim2.new(0, 70, 0, 25)
+    Button.Font = Enum.Font.Gotham
+    Button.Text = tab
+    Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Button.TextScaled = true
+    local BCorner = Instance.new("UICorner")
+    BCorner.CornerRadius = UDim.new(0, 4)
+    BCorner.Parent = Button
+    Button.MouseButton1Click:Connect(function()
+        CurrentTab = tab
+        for _, frame in TabFrames do frame.Visible = false end
+        TabFrames[tab].Visible = true
+    end)
+end
 
-VisualsTab:CreateToggle({
-   Name = "Box",
-   CurrentValue = false,
-   Flag = "BoxToggle",
-   Callback = function(v) cfg.ESPBox = v end
-})
+-- Tab Frames
+for _, tab in TabButtons do
+    local Frame = Instance.new("Frame")
+    Frame.Parent = MainFrame
+    Frame.BackgroundTransparency = 1
+    Frame.Position = UDim2.new(0, 10, 0, 80)
+    Frame.Size = UDim2.new(1, -20, 1, -90)
+    Frame.Visible = (tab == "Combat")
+    TabFrames[tab] = Frame
+end
 
-VisualsTab:CreateToggle({
-   Name = "Skeleton",
-   CurrentValue = false,
-   Flag = "SkeletonToggle",
-   Callback = function(v) cfg.ESPSkeleton = v end
-})
-
-VisualsTab:CreateToggle({
-   Name = "Health Bar",
-   CurrentValue = false,
-   Flag = "HealthToggle",
-   Callback = function(v) cfg.ESPHealth = v end
-})
-
-VisualsTab:CreateToggle({
-   Name = "FOV Circle",
-   CurrentValue = false,
-   Flag = "FOVToggle
+-- Combat Tab
+local SilentToggle = Instance.new("TextButton")
+SilentToggle.Parent = TabFrames["Combat"]
+SilentToggle.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
+SilentToggle.Position = UDim2.new(0, 0, 0, 0)
+SilentToggle.Size = UDim2.new(1, 0, 0, 30)
+SilentToggle.Text = "Silent Aim: OFF"
+SilentToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+SilentToggle.Font = Enum.Font.Gotham
+SilentToggle.TextScaled = true
+local STCorner = Instance.new("UICorner")
+STCorner.CornerRadius = UDim.new(0, 4)
+STCorner.Parent = SilentToggle
+SilentToggle.MouseButton1Click:Connect(function()
+    cfg.SilentAim = not cfg.SilentAim
+    SilentToggle.Text = "Silent Aim: " .. (cfg.SilentAim and "ON" or "OFF")
+    SilentToggle.BackgroundColor3
