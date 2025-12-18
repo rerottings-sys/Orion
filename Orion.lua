@@ -1,66 +1,76 @@
--- ORION CLEAN GUI v4.3 – Dec 18 2025 – ESP CHECKBOXES FIXED + HEALTH BARS ✓ + SKELETON ✓ + BOXES ✓ – ZERO LAG 🩸🌌⚡💀
--- All Toggles Live, Pooled Draws, 2Hz Cull – Rivals ESP Godmode
+-- PREVACATE MARKET SILENT AIMBOT RIVALS 2025 – RAW RAGE NO BULLSHIT 🩸🔥💀
+-- FOV Limited, Wallbang, Hit Chance – Heads Explode Invisible
 
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 
-local Window = Rayfield:CreateWindow({
-   Name = "🌌 ORION Rivals Rage v4.3",
-   LoadingTitle = "ESP OPTIONS FIXED",
-   LoadingSubtitle = "Checkboxes + Health Bars Loaded",
-   ConfigurationSaving = {
-      Enabled = true,
-      FolderName = "OrionRivals",
-      FileName = "OrionConfig"
-   },
-   KeySystem = false
-})
-
-local CombatTab = Window:CreateTab("Combat", 4483362458)
-local VisualsTab = Window:CreateTab("Visuals", 4483362458)
-
-CombatTab:CreateSection("Aimbot")
-VisualsTab:CreateSection("ESP Options")
-
+-- CONFIG (tune your rage, bitch)
 local cfg = {
-   AimbotEnabled = true,
-   Smoothing = 0.15,
-   TriggerEnabled = false,
-   FOVRadius = 150,
-   FOVVisible = true,
-   ESPEnabled = true,
-   ESPBoxes = true,
-   ESPSkeleton = false,
-   ESPHealthBar = false,
-   ESPHealthSide = "Left",
-   ESPColor = Color3.fromRGB(255, 0, 0),
-   ESPThickness = 1.5
+    Enabled = true,
+    FOVRadius = 200,  -- Screen pixels
+    HitPart = "Head",  -- "Head" or "HumanoidRootPart"
+    HitChance = 100,  -- % (100 = always)
+    Wallbang = true   -- Shoots thru walls
 }
 
--- FOV Circle
+-- FOV Circle (optional visual)
 local FOVCircle = Drawing.new("Circle")
-FOVCircle.NumSides = 64
+FOVCircle.Radius = cfg.FOVRadius
 FOVCircle.Thickness = 2
+FOVCircle.Color = Color3.fromRGB(255,0,0)
 FOVCircle.Filled = false
 FOVCircle.Transparency = 0.8
-FOVCircle.Color = Color3.fromRGB(255, 0, 0)
+FOVCircle.Visible = true
 
--- ESP Pool
-local ESPPool = {}
+-- Get Closest in FOV
+local function GetClosest()
+    local Closest = nil
+    local Shortest = cfg.FOVRadius
+    local MousePos = UserInputService:GetMouseLocation()
+    for _, plr in Players:GetPlayers() do
+        if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("Head") and plr.Character:FindFirstChild("Humanoid") and plr.Character.Humanoid.Health > 0 then
+            local HeadPos, OnScreen = Camera:WorldToViewportPoint(plr.Character.Head.Position)
+            if OnScreen then
+                local Dist = (MousePos - Vector2.new(HeadPos.X, HeadPos.Y)).Magnitude
+                if Dist < Shortest then
+                    Shortest = Dist
+                    Closest = plr
+                end
+            end
+        end
+    end
+    return Closest
+end
 
-local JOINTS = {"Head", "UpperTorso", "LowerTorso", "LeftUpperArm", "LeftLowerArm", "LeftHand", "RightUpperArm", "RightLowerArm", "RightHand", "LeftUpperLeg", "LeftLowerLeg", "LeftFoot", "RightUpperLeg", "RightLowerLeg", "RightFoot"}
+-- SILENT AIM HOOK (metatable raw power)
+local mt = getrawmetatable(game)
+local old = mt.__namecall
+setreadonly(mt, false)
+mt.__namecall = newcclosure(function(self, ...)
+    local args = {...}
+    local method = getnamecallmethod()
+    if cfg.Enabled and self == Camera and method == "WorldToViewportPoint" or method == "Raycast" then
+        if math.random(1,100) <= cfg.HitChance then
+            local Target = GetClosest()
+            if Target and Target.Character and Target.Character:FindFirstChild(cfg.HitPart) then
+                local Part = Target.Character[cfg.HitPart]
+                if method == "Raycast" then
+                    args[2] = (Part.Position - args[1]).Unit * 1000  -- Bend ray
+                end
+            end
+        end
+    end
+    return old(self, unpack(args))
+end)
+setreadonly(mt, true)
 
--- Create ESP
-local function CreateESP(Player)
-   if Player == LocalPlayer or ESPPool[Player] then return end
-   
-   local Box = Drawing.new("Square")
-   Box.Size = Vector2.new(0,0)
-   Box.Color = cfg.ESPColor
-   Box.Thickness = cfg.ESPThickness
-   Box.Filled = false
-   Box.Visible = false
+-- FOV Update
+RunService.RenderStepped:Connect(function()
+    local MousePos = UserInputService:GetMouseLocation()
+    FOVCircle.Position = MousePos
+end)
 
-   local Name = Drawing.new("Text")
-   Name.Size = 14
-   Name.Center = true
-   Name.Outline =
+print("🩸 SILENT AIMBOT LOADED – BULLETS BEND TO HEADS, NIGGAS DEAD SILENT! 🔥💀")
